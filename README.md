@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # misconfig-ConfigTestCoverageAnalyzer
 Analyzes configuration files to determine which parameters and features are covered by existing tests or validation rules, highlighting areas with insufficient coverage. - Focused on Check for misconfigurations in configuration files or infrastructure definitions
 
