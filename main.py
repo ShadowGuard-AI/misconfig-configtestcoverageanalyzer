@@ -61,6 +61,11 @@ def load_config_file(config_file):
     """
     try:
         with open(config_file, "r") as f:
+            # The type is whatever follows the last dot in the whole
+            # path, so a directory with a dot in its name and an
+            # extensionless file inside it borrows the directory's
+            # suffix, and a file with no dot at all is judged by its own
+            # name and refused as an unsupported format.
             file_extension = config_file.split(".")[-1].lower()
             if file_extension == "json":
                 config_data = json.load(f)
@@ -102,6 +107,11 @@ def extract_config_parameters(config_data, prefix=""):
                 # Intermediate keys are containers, not parameters.
                 parameters.extend(extract_config_parameters(value, full_key + "."))
             else:
+                # An empty mapping or list counts as a parameter in its own
+                # right, because the container branch above requires a
+                # non empty value. So a section the author left blank adds
+                # one to the total and, having no leaf a test would name,
+                # usually lands in the uncovered list.
                 parameters.append(full_key)
     elif isinstance(config_data, list):
         for i, item in enumerate(config_data):
@@ -120,6 +130,11 @@ def _parameter_is_referenced(param, content):
     A raw substring is not enough, so the leaf port does not match the
     inside of the word transport.
     """
+    # Coverage here means mentioned, not exercised. A parameter
+    # named in a comment, a string, or a fixture counts as covered
+    # by that file, and the leaf rule widens it further: one
+    # mention of the word port covers every parameter whose path
+    # ends in port, in however many sections the config has.
     leaf = param.split(".")[-1].split("[")[0]
     for candidate in {param, leaf}:
         if not candidate:
@@ -153,6 +168,11 @@ def analyze_test_scripts(test_scripts, config_parameters):
             missing_files.append(script)
             continue
 
+        # Existence was checked above and the open is unguarded, so a
+        # path that vanishes in between, or a directory handed in as
+        # a test script, raises out of this function and ends the
+        # whole run in main before any report is written, where a
+        # missing file would only have been recorded and skipped.
         with open(script, "r") as f:
             script_content = f.read()
         read_files.append(script)
@@ -309,6 +329,12 @@ def main():
         )
         logging.debug(f"Covered parameters by rules: {covered_parameters_rules}")
 
+        # The report is written before the missing files verdict in
+        # main, and the default output name lands in whatever
+        # directory the tool was run from. Only the config file is
+        # protected from being overwritten, by the check at the top
+        # of main; a test script named as the output would be
+        # replaced by the report without a word.
         generate_coverage_report(
             args.config_file,
             config_parameters,
